@@ -1,0 +1,14 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "checkout-contact-fields"
+handle = "checkout-contact-fields"
+uid = "fbcbb4af-c13c-12e8-6cdd-d23e7a61cf18d018c050"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.checkout.contact.render-after"
+
+[extensions.capabilities]
+block_progress = true
