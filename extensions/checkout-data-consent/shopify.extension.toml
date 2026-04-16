@@ -1,0 +1,14 @@
+api_version = "2026-01"
+uid = "288e49c8-df06-e774-6b46-8c3106eac1e60e154d10"
+
+[[extensions]]
+name = "checkout-data-consent"
+handle = "checkout-data-consent"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.checkout.actions.render-before"
+
+[extensions.capabilities]
+block_progress = true
