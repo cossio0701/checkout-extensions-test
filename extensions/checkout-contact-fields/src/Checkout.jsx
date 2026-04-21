@@ -1,30 +1,26 @@
 import "@shopify/ui-extensions/preact";
 import { render } from "preact";
 import { useState } from "preact/hooks";
-import { useBuyerJourneyIntercept } from "@shopify/ui-extensions/checkout/preact";
+import {
+  useBuyerJourneyIntercept,
+  useAttributeValues,
+} from "@shopify/ui-extensions/checkout/preact";
 
 export default async () => {
   render(<Extension />, document.body);
 };
 
-const DOCUMENT_TYPES = [
-  { value: "CO-CC",  label: "(Colombia) Cédula de ciudadanía" },
-  { value: "PE-DNI", label: "(Perú) DNI" },
-  { value: "BO-CI",  label: "(Bolivia) Cédula de identidad" },
-  { value: "CR-CI",  label: "(Costa Rica) Cédula de identidad" },
-  { value: "EC-CI",  label: "(Ecuador) Cédula ciudadana" },
-  { value: "GT-DPI", label: "(Guatemala) DPI" },
-  { value: "PA-CI",  label: "(Panamá) Cédula de identidad" },
-];
+const DOC_TYPES = ["CO-CC", "PE-DNI", "BO-CI", "CR-CI", "EC-CI", "GT-DPI", "PA-CI"];
 
-const FORMAT_HINTS = {
-  "CO-CC":  "6 a 10 dígitos",
-  "PE-DNI": "8 dígitos",
-  "BO-CI":  "4 a 8 dígitos, opcional letra al final (ej. 1234567A)",
-  "CR-CI":  "9 dígitos",
-  "EC-CI":  "10 dígitos",
-  "GT-DPI": "13 dígitos",
-  "PA-CI":  "Formato: X-XXX-XXXX",
+/** @type {Record<string, { label: string, hint: string, error: string, maxLength: number }>} */
+const DOC_CONFIG = {
+  "CO-CC":  { label: "docTypeCoCc",  hint: "hintCoCc",  error: "errorCoCc",  maxLength: 10 },
+  "PE-DNI": { label: "docTypePeDni", hint: "hintPeDni", error: "errorPeDni", maxLength: 8  },
+  "BO-CI":  { label: "docTypeBoCi",  hint: "hintBoCi",  error: "errorBoCi",  maxLength: 9  },
+  "CR-CI":  { label: "docTypeCrCi",  hint: "hintCrCi",  error: "errorCrCi",  maxLength: 9  },
+  "EC-CI":  { label: "docTypeEcCi",  hint: "hintEcCi",  error: "errorEcCi",  maxLength: 10 },
+  "GT-DPI": { label: "docTypeGtDpi", hint: "hintGtDpi", error: "errorGtDpi", maxLength: 13 },
+  "PA-CI":  { label: "docTypePaCi",  hint: "hintPaCi",  error: "errorPaCi",  maxLength: 12 },
 };
 
 /** Valida cédula ecuatoriana usando algoritmo de módulo 10 */
@@ -47,41 +43,43 @@ function validateEcuadorCI(value) {
 /**
  * @param {string} type
  * @param {string} value
+ * @param {(key: string) => string} t
  * @returns {string | undefined}
  */
-function validateDoc(type, value) {
-  if (!value) return "Ingresa tu número de documento";
+function validateDoc(type, value, t) {
+  if (!value) return t("errorDocRequired");
   switch (type) {
     case "CO-CC":
-      return /^\d{6,10}$/.test(value)
-        ? undefined : "Solo números, entre 6 y 10 dígitos (sin letras ni símbolos)";
+      return /^\d{6,10}$/.test(value) ? undefined : t("errorCoCc");
     case "PE-DNI":
-      return /^\d{8}$/.test(value)
-        ? undefined : "Solo números, exactamente 8 dígitos (sin letras ni símbolos)";
+      return /^\d{8}$/.test(value) ? undefined : t("errorPeDni");
     case "BO-CI":
-      return /^\d{4,8}[A-Za-z]?$/.test(value)
-        ? undefined : "Entre 4 y 8 dígitos, con una letra opcional al final (ej. 1234567A)";
+      return /^\d{4,8}[A-Za-z]?$/.test(value) ? undefined : t("errorBoCi");
     case "CR-CI":
-      return /^\d{9}$/.test(value)
-        ? undefined : "Solo números, exactamente 9 dígitos (sin letras ni símbolos)";
+      return /^\d{9}$/.test(value) ? undefined : t("errorCrCi");
     case "EC-CI":
-      return validateEcuadorCI(value)
-        ? undefined : "Cédula inválida — deben ser 10 dígitos válidos (sin letras ni símbolos)";
+      return validateEcuadorCI(value) ? undefined : t("errorEcCi");
     case "GT-DPI":
-      return /^\d{13}$/.test(value)
-        ? undefined : "Solo números, exactamente 13 dígitos (sin letras ni símbolos)";
+      return /^\d{13}$/.test(value) ? undefined : t("errorGtDpi");
     case "PA-CI":
-      return /^\d{1,2}-\d{3,4}-\d{3,4}$/.test(value)
-        ? undefined : "Solo números y guiones, formato X-XXX-XXXX";
+      return /^\d{1,2}-\d{3,4}-\d{3,4}$/.test(value) ? undefined : t("errorPaCi");
     default:
       return undefined;
   }
 }
 
 function Extension() {
-  const [tipoDoc, setTipoDoc] = useState("");
-  const [numDoc, setNumDoc] = useState("");
-  const [celular, setCelular] = useState("");
+  const t = (key) => shopify.i18n.translate(key);
+
+  const [initialDocType, initialDocNumber, initialPhone] = useAttributeValues([
+    "tipo_documento",
+    "numero_documento",
+    "celular",
+  ]);
+
+  const [tipoDoc, setTipoDoc] = useState(initialDocType ?? "");
+  const [numDoc, setNumDoc] = useState(initialDocNumber ?? "");
+  const [celular, setCelular] = useState(initialPhone ?? "");
   const [errors, setErrors] = useState(
     /** @type {Record<string, string|undefined>} */ ({}),
   );
@@ -89,20 +87,23 @@ function Extension() {
   useBuyerJourneyIntercept(() => {
     const newErrors = /** @type {Record<string, string>} */ ({});
 
-    if (!tipoDoc) newErrors.tipoDoc = "Selecciona el tipo de documento";
+    const trimmedDoc = numDoc.trim();
+    const trimmedPhone = celular.trim();
 
-    const docError = validateDoc(tipoDoc, numDoc);
+    if (!tipoDoc) newErrors.tipoDoc = t("errorDocTypeRequired");
+
+    const docError = validateDoc(tipoDoc, trimmedDoc, t);
     if (docError) newErrors.numDoc = docError;
 
-    if (!celular) newErrors.celular = "Ingresa tu número de celular";
-    else if (!/^\+?[\d\s\-()]{7,15}$/.test(celular))
-      newErrors.celular = "Solo números y los caracteres + - ( ), entre 7 y 15 caracteres";
+    if (!trimmedPhone) newErrors.celular = t("errorPhoneRequired");
+    else if (!/^\+?[\d\s\-()]{7,15}$/.test(trimmedPhone))
+      newErrors.celular = t("errorPhoneInvalid");
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return {
         behavior: "block",
-        reason: "Faltan datos de contacto requeridos",
+        reason: t("interceptReason"),
       };
     }
 
@@ -110,14 +111,18 @@ function Extension() {
   });
 
   async function saveAttribute(key, value) {
-    await shopify.applyAttributeChange({ type: "updateAttribute", key, value });
+    await shopify.applyAttributeChange({
+      type: "updateAttribute",
+      key,
+      value: typeof value === "string" ? value.trim() : value,
+    });
   }
 
   return (
     <s-stack direction="block" gap="base">
       <s-grid gridTemplateColumns="1fr 1fr" gap="base">
         <s-select
-          label="Tipo de documento"
+          label={t("labelDocumentType")}
           value={tipoDoc}
           error={errors.tipoDoc}
           onChange={(e) => {
@@ -133,20 +138,22 @@ function Extension() {
             saveAttribute("numero_documento", "");
           }}
         >
-          <s-option value="">Selecciona...</s-option>
-          {DOCUMENT_TYPES.map((d) => (
-            <s-option key={d.value} value={d.value}>
-              {d.label}
+          <s-option value="">{t("selectPlaceholder")}</s-option>
+          {DOC_TYPES.map((code) => (
+            <s-option key={code} value={code}>
+              {t(DOC_CONFIG[code].label)}
             </s-option>
           ))}
         </s-select>
 
         <s-text-field
-          label="Número de documento"
+          label={t("labelDocumentNumber")}
           value={numDoc}
           error={errors.numDoc}
           disabled={!tipoDoc}
-          description={tipoDoc ? FORMAT_HINTS[tipoDoc] : undefined}
+          maxLength={tipoDoc ? DOC_CONFIG[tipoDoc].maxLength : undefined}
+          // @ts-expect-error — `description` is supported at runtime by s-text-field
+          description={tipoDoc ? t(DOC_CONFIG[tipoDoc].hint) : undefined}
           onInput={(e) => {
             const v = e.target.value;
             setNumDoc(v);
@@ -159,9 +166,10 @@ function Extension() {
       </s-grid>
 
       <s-text-field
-        label="Número de celular"
+        label={t("labelPhone")}
         value={celular}
         error={errors.celular}
+        maxLength={15}
         onInput={(e) => {
           const v = e.target.value;
           setCelular(v);
