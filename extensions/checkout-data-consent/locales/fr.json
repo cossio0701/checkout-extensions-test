@@ -1,5 +1,4 @@
 {
-  "bannerHeading": "Requis pour continuer",
-  "consentLabel": "J'autorise le traitement de mes données personnelles conformément à la politique de confidentialité (requis)",
-  "consentRequired": "Vous devez accepter l'autorisation de traitement des données pour continuer"
+  "consentIntro": "Je comprends et accepte la",
+  "policyLinkText": "politique de traitement des données personnelles"
 }

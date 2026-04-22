@@ -30,3 +30,5 @@ extensions/*/dist
 
 # Internal documentation guide
 CHECKOUT-EXTENSIONS-GUIDE.md
+checkout-extension-targets.md
+checkout-shopify-overview.md
