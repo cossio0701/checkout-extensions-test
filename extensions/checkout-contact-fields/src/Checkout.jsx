@@ -10,17 +10,17 @@ export default async () => {
   render(<Extension />, document.body);
 };
 
-const DOC_TYPES = ["CO-CC", "PE-DNI", "BO-CI", "CR-CI", "EC-CI", "GT-DPI", "PA-CI"];
+const DOC_TYPES = ["CO3", "PE3", "BL3", "CR3", "EC3", "GT3", "PN3"];
 
 /** @type {Record<string, { label: string, hint: string, error: string, maxLength: number }>} */
 const DOC_CONFIG = {
-  "CO-CC":  { label: "docTypeCoCc",  hint: "hintCoCc",  error: "errorCoCc",  maxLength: 10 },
-  "PE-DNI": { label: "docTypePeDni", hint: "hintPeDni", error: "errorPeDni", maxLength: 8  },
-  "BO-CI":  { label: "docTypeBoCi",  hint: "hintBoCi",  error: "errorBoCi",  maxLength: 9  },
-  "CR-CI":  { label: "docTypeCrCi",  hint: "hintCrCi",  error: "errorCrCi",  maxLength: 9  },
-  "EC-CI":  { label: "docTypeEcCi",  hint: "hintEcCi",  error: "errorEcCi",  maxLength: 10 },
-  "GT-DPI": { label: "docTypeGtDpi", hint: "hintGtDpi", error: "errorGtDpi", maxLength: 13 },
-  "PA-CI":  { label: "docTypePaCi",  hint: "hintPaCi",  error: "errorPaCi",  maxLength: 12 },
+  "CO3": { label: "docTypeCo3", hint: "hintCo3", error: "errorCo3", maxLength: 10 },
+  "PE3": { label: "docTypePe3", hint: "hintPe3", error: "errorPe3", maxLength: 8  },
+  "BL3": { label: "docTypeBl3", hint: "hintBl3", error: "errorBl3", maxLength: 9  },
+  "CR3": { label: "docTypeCr3", hint: "hintCr3", error: "errorCr3", maxLength: 9  },
+  "EC3": { label: "docTypeEc3", hint: "hintEc3", error: "errorEc3", maxLength: 10 },
+  "GT3": { label: "docTypeGt3", hint: "hintGt3", error: "errorGt3", maxLength: 13 },
+  "PN3": { label: "docTypePn3", hint: "hintPn3", error: "errorPn3", maxLength: 12 },
 };
 
 /** Valida cédula ecuatoriana usando algoritmo de módulo 10 */
@@ -49,20 +49,20 @@ function validateEcuadorCI(value) {
 function validateDoc(type, value, t) {
   if (!value) return t("errorDocRequired");
   switch (type) {
-    case "CO-CC":
-      return /^\d{6,10}$/.test(value) ? undefined : t("errorCoCc");
-    case "PE-DNI":
-      return /^\d{8}$/.test(value) ? undefined : t("errorPeDni");
-    case "BO-CI":
-      return /^\d{4,8}[A-Za-z]?$/.test(value) ? undefined : t("errorBoCi");
-    case "CR-CI":
-      return /^\d{9}$/.test(value) ? undefined : t("errorCrCi");
-    case "EC-CI":
-      return validateEcuadorCI(value) ? undefined : t("errorEcCi");
-    case "GT-DPI":
-      return /^\d{13}$/.test(value) ? undefined : t("errorGtDpi");
-    case "PA-CI":
-      return /^\d{1,2}-\d{3,4}-\d{3,4}$/.test(value) ? undefined : t("errorPaCi");
+    case "CO3":
+      return /^\d{6,10}$/.test(value) ? undefined : t("errorCo3");
+    case "PE3":
+      return /^\d{8}$/.test(value) ? undefined : t("errorPe3");
+    case "BL3":
+      return /^\d{4,8}[A-Za-z]?$/.test(value) ? undefined : t("errorBl3");
+    case "CR3":
+      return /^\d{9}$/.test(value) ? undefined : t("errorCr3");
+    case "EC3":
+      return validateEcuadorCI(value) ? undefined : t("errorEc3");
+    case "GT3":
+      return /^\d{13}$/.test(value) ? undefined : t("errorGt3");
+    case "PN3":
+      return /^\d{1,2}-\d{3,4}-\d{3,4}$/.test(value) ? undefined : t("errorPn3");
     default:
       return undefined;
   }

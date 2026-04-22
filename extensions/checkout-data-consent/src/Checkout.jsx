@@ -1,5 +1,6 @@
 import "@shopify/ui-extensions/preact";
 import { render } from "preact";
+import { useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { useAttributeValues } from "@shopify/ui-extensions/checkout/preact";
 
@@ -11,23 +12,39 @@ function Extension() {
   const [savedConsent] = useAttributeValues(["data_consent"]);
   const accepted = useSignal(savedConsent === "true");
 
-  async function onChange(event) {
+  // Persistir estado inicial una vez al montar
+  useEffect(() => {
+    const now = new Date().toISOString();
+
+    shopify.applyAttributeChange({
+      type: "updateAttribute",
+      key: "data_consent",
+      value: accepted.value ? "true" : "false",
+    });
+
+    shopify.applyAttributeChange({
+      type: "updateAttribute",
+      key: "data_consent_updated_at",
+      value: now,
+    });
+  }, []);
+
+  function onChange(event) {
     const isChecked = event.target.checked;
     accepted.value = isChecked;
     const now = new Date().toISOString();
 
-    Promise.all([
-      shopify.applyAttributeChange({
-        type: "updateAttribute",
-        key: "data_consent",
-        value: isChecked ? "true" : "false",
-      }),
-      shopify.applyAttributeChange({
-        type: "updateAttribute",
-        key: "data_consent_updated_at",
-        value: now,
-      }),
-    ]);
+    shopify.applyAttributeChange({
+      type: "updateAttribute",
+      key: "data_consent",
+      value: isChecked ? "true" : "false",
+    });
+
+    shopify.applyAttributeChange({
+      type: "updateAttribute",
+      key: "data_consent_updated_at",
+      value: now,
+    });
   }
 
   return (
