@@ -1,5 +1,24 @@
 export const DOC_TYPES = ["CO3", "PE3", "BL3", "CR3", "EC3", "GT3", "PN3"];
 
+/**
+ * Devuelve true si el código está entre los tipos soportados.
+ * @param {string} code
+ * @returns {boolean}
+ */
+export function isSupportedDocType(code) {
+  return DOC_TYPES.includes(code);
+}
+
+/**
+ * Normaliza un tipo de documento: devuelve el código si está soportado,
+ * o "" si no. Útil para autofill desde metafields/attributes.
+ * @param {string | undefined} code
+ * @returns {string}
+ */
+export function normalizeDocType(code) {
+  return isSupportedDocType(code) ? code : "";
+}
+
 /** @type {Record<string, { label: string, hint: string, error: string, maxLength: number }>} */
 export const DOC_CONFIG = {
   "CO3": { label: "docTypeCo3", hint: "hintCo3", error: "errorCo3", maxLength: 10 },

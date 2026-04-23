@@ -4,6 +4,8 @@ import {
   DOC_CONFIG,
   validateEcuadorCI,
   validateDocKey,
+  isSupportedDocType,
+  normalizeDocType,
 } from "./doc-validation.js";
 
 describe("DOC_CONFIG", () => {
@@ -152,6 +154,35 @@ describe("validateDocKey — GT3 (Guatemala)", () => {
     expect(validateDocKey("GT3", "123456789012")).toBe("errorGt3");
     expect(validateDocKey("GT3", "12345678901234")).toBe("errorGt3");
     expect(validateDocKey("GT3", "123456789012a")).toBe("errorGt3");
+  });
+});
+
+describe("isSupportedDocType", () => {
+  it("acepta cada tipo en DOC_TYPES", () => {
+    for (const type of DOC_TYPES) {
+      expect(isSupportedDocType(type)).toBe(true);
+    }
+  });
+
+  it("rechaza tipos desconocidos", () => {
+    expect(isSupportedDocType("XX9")).toBe(false);
+    expect(isSupportedDocType("CO")).toBe(false);
+    expect(isSupportedDocType("")).toBe(false);
+    expect(isSupportedDocType(undefined)).toBe(false);
+  });
+});
+
+describe("normalizeDocType", () => {
+  it("devuelve el mismo código si está soportado", () => {
+    expect(normalizeDocType("CO3")).toBe("CO3");
+    expect(normalizeDocType("EC3")).toBe("EC3");
+  });
+
+  it("devuelve string vacío para códigos desconocidos", () => {
+    expect(normalizeDocType("XX9")).toBe("");
+    expect(normalizeDocType("")).toBe("");
+    expect(normalizeDocType(undefined)).toBe("");
+    expect(normalizeDocType(null)).toBe("");
   });
 });
 

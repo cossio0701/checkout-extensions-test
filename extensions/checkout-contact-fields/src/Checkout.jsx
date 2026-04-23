@@ -11,7 +11,13 @@ import {
   useCustomerMetafield,
   useOnCustomerChange,
 } from "./customer-metafields.js";
-import { DOC_TYPES, DOC_CONFIG, validateDocKey } from "./doc-validation.js";
+import {
+  DOC_TYPES,
+  DOC_CONFIG,
+  validateDocKey,
+  isSupportedDocType,
+  normalizeDocType,
+} from "./doc-validation.js";
 
 const OWNER_KEY = "contact_fields_owner";
 const OWNED_ATTRIBUTES = ["tipo_documento", "numero_documento", "celular"];
@@ -65,13 +71,15 @@ function Extension() {
     initialDocType || initialDocNumber || initialPhone,
   );
 
-  const [tipoDoc, setTipoDoc] = useState(initialDocType ?? "");
+  const [tipoDoc, setTipoDoc] = useState(normalizeDocType(initialDocType));
   const [numDoc, setNumDoc] = useState(initialDocNumber ?? "");
   const [celular, setCelular] = useState(initialPhone ?? "");
   const [didAutofill, setDidAutofill] = useState(false);
   const [errors, setErrors] = useState(
     /** @type {Record<string, string|undefined>} */ ({}),
   );
+
+  const selectedDocConfig = DOC_CONFIG[tipoDoc] ?? undefined;
 
   /** Limpia estado local + attributes + marker. */
   const wipeAll = () => {
@@ -114,23 +122,29 @@ function Extension() {
 
   // Autofill único desde customer metafields cuando el cliente está logueado.
   // Corre una sola vez: no pisa ediciones del usuario aunque deje un campo vacío.
+  // Tipos desconocidos se ignoran; celular se autofill independientemente.
   useEffect(() => {
     if (didAutofill) return;
     const hasAnySaved = savedTipoDoc || savedNumDoc || savedCelular;
     if (!hasAnySaved) return;
 
-    if (savedTipoDoc && !initialDocType) {
+    const isTipoDocSupported = isSupportedDocType(savedTipoDoc);
+
+    if (isTipoDocSupported && savedTipoDoc && !initialDocType) {
       setTipoDoc(savedTipoDoc);
       saveAttribute("tipo_documento", savedTipoDoc);
     }
-    if (savedNumDoc && !initialDocNumber) {
+
+    if (isTipoDocSupported && savedNumDoc && !initialDocNumber) {
       setNumDoc(savedNumDoc);
       saveAttribute("numero_documento", savedNumDoc);
     }
+
     if (savedCelular && !initialPhone) {
       setCelular(savedCelular);
       saveAttribute("celular", savedCelular);
     }
+
     setErrors({});
     setDidAutofill(true);
   }, [
@@ -201,10 +215,10 @@ function Extension() {
           label={t("labelDocumentNumber")}
           value={numDoc}
           error={errors.numDoc}
-          disabled={!tipoDoc}
-          maxLength={tipoDoc ? DOC_CONFIG[tipoDoc].maxLength : undefined}
+          disabled={!selectedDocConfig}
+          maxLength={selectedDocConfig?.maxLength}
           // @ts-expect-error — `description` is supported at runtime by s-text-field
-          description={tipoDoc ? t(DOC_CONFIG[tipoDoc].hint) : undefined}
+          description={selectedDocConfig ? t(selectedDocConfig.hint) : undefined}
           onInput={(e) => {
             const v = e.target.value;
             setNumDoc(v);
