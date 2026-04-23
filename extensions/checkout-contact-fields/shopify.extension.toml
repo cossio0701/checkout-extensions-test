@@ -12,3 +12,16 @@ target = "purchase.checkout.contact.render-after"
 
 [extensions.capabilities]
 block_progress = true
+
+# Customer metafields para pre-llenar datos cuando el usuario está logueado
+[[extensions.metafields]]
+namespace = "custom"
+key = "tipo_documento"
+
+[[extensions.metafields]]
+namespace = "custom"
+key = "numero_documento"
+
+[[extensions.metafields]]
+namespace = "custom"
+key = "celular"

@@ -2,49 +2,125 @@ import "@shopify/ui-extensions/preact";
 import { render } from "preact";
 import { useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
-import { useAttributeValues } from "@shopify/ui-extensions/checkout/preact";
+import {
+  useAttributeValues,
+  useApplyAttributeChange,
+  useCustomer,
+} from "@shopify/ui-extensions/checkout/preact";
+import {
+  useCustomerMetafield,
+  useOnCustomerChange,
+} from "./customer-metafields.js";
+
+const OWNER_KEY = "consent_owner";
+const OWNED_ATTRIBUTES = ["data_consent", "data_consent_updated_at"];
 
 export default () => {
   render(<Extension />, document.body);
 };
 
 function Extension() {
-  const [savedConsent] = useAttributeValues(["data_consent"]);
-  const accepted = useSignal(savedConsent === "true");
+  const applyAttributeChange = useApplyAttributeChange();
+  const customer = useCustomer();
+  const currentCustomerId = customer?.id;
 
-  // Persistir estado inicial una vez al montar
+  const savedConsent = useCustomerMetafield("custom", "data_consent");
+  const [checkoutConsent, checkoutConsentUpdatedAt, ownerMarker] = useAttributeValues([
+    "data_consent",
+    "data_consent_updated_at",
+    OWNER_KEY,
+  ]);
+  const accepted = useSignal(false);
+  const hasOwnedValues = Boolean(checkoutConsent || checkoutConsentUpdatedAt);
+  const shouldPrefillFromCustomer = Boolean(
+    currentCustomerId &&
+      savedConsent === "true" &&
+      (checkoutConsent === undefined || checkoutConsent === ""),
+  );
+
+  /** Estampa el marker del propietario actual junto con cualquier write. */
+  const stampOwner = () => {
+    if (currentCustomerId) {
+      applyAttributeChange({
+        type: "updateAttribute",
+        key: OWNER_KEY,
+        value: currentCustomerId,
+      });
+    }
+  };
+
+  /** Limpia estado local + attributes + marker. */
+  const wipeAll = () => {
+    accepted.value = false;
+    for (const key of OWNED_ATTRIBUTES) {
+      applyAttributeChange({ type: "updateAttribute", key, value: "" });
+    }
+    applyAttributeChange({
+      type: "updateAttribute",
+      key: OWNER_KEY,
+      value: "",
+    });
+  };
+
+  // Wipe defensivo en mount: marker apunta a otro customer (cierre de
+  // navegador, switch de cuenta) → limpiamos antes de evaluar el autofill.
   useEffect(() => {
-    const now = new Date().toISOString();
+    if (ownerMarker && ownerMarker !== currentCustomerId) {
+      wipeAll();
+    }
+  }, [ownerMarker, currentCustomerId]);
 
-    shopify.applyAttributeChange({
-      type: "updateAttribute",
-      key: "data_consent",
-      value: accepted.value ? "true" : "false",
-    });
+  // Backfill del owner marker para consent heredado de la implementacion
+  // anterior donde existian attributes pero no quedaba estampado OWNER_KEY.
+  useEffect(() => {
+    if (currentCustomerId && hasOwnedValues && !ownerMarker) {
+      stampOwner();
+    }
+  }, [currentCustomerId, hasOwnedValues, ownerMarker]);
 
-    shopify.applyAttributeChange({
-      type: "updateAttribute",
-      key: "data_consent_updated_at",
-      value: now,
-    });
-  }, []);
+  // Wipe en tiempo real ante logout o cambio de customer dentro de la sesión.
+  useOnCustomerChange(() => {
+    wipeAll();
+  });
+
+  useEffect(() => {
+    accepted.value = checkoutConsent === "true" || shouldPrefillFromCustomer;
+
+    if (shouldPrefillFromCustomer) {
+      applyAttributeChange({
+        type: "updateAttribute",
+        key: "data_consent",
+        value: "true",
+      });
+
+      applyAttributeChange({
+        type: "updateAttribute",
+        key: "data_consent_updated_at",
+        value: new Date().toISOString(),
+      });
+
+      stampOwner();
+    }
+  }, [checkoutConsent, shouldPrefillFromCustomer, applyAttributeChange, currentCustomerId]);
 
   function onChange(event) {
     const isChecked = event.target.checked;
     accepted.value = isChecked;
     const now = new Date().toISOString();
 
-    shopify.applyAttributeChange({
+    applyAttributeChange({
       type: "updateAttribute",
       key: "data_consent",
       value: isChecked ? "true" : "false",
     });
 
-    shopify.applyAttributeChange({
+    applyAttributeChange({
       type: "updateAttribute",
       key: "data_consent_updated_at",
       value: now,
     });
+
+    stampOwner();
   }
 
   return (

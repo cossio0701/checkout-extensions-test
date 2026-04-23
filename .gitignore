@@ -32,3 +32,6 @@ extensions/*/dist
 CHECKOUT-EXTENSIONS-GUIDE.md
 checkout-extension-targets.md
 checkout-shopify-overview.md
+
+# AI tooling artifacts
+.atl/

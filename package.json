@@ -8,10 +8,13 @@
     "dev": "shopify app dev",
     "info": "shopify app info",
     "generate": "shopify app generate",
-    "deploy": "shopify app deploy"
+    "deploy": "shopify app deploy",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "dependencies": {},
-  "devDependencies": {},
+  "devDependencies": {
+    "vitest": "^4.1.5"
+  },
   "trustedDependencies": [
     "@shopify/plugin-cloudflare"
   ],

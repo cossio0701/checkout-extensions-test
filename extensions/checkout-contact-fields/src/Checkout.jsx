@@ -1,88 +1,147 @@
 import "@shopify/ui-extensions/preact";
 import { render } from "preact";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import {
   useBuyerJourneyIntercept,
   useAttributeValues,
+  useApplyAttributeChange,
+  useCustomer,
 } from "@shopify/ui-extensions/checkout/preact";
+import {
+  useCustomerMetafield,
+  useOnCustomerChange,
+} from "./customer-metafields.js";
+import { DOC_TYPES, DOC_CONFIG, validateDocKey } from "./doc-validation.js";
+
+const OWNER_KEY = "contact_fields_owner";
+const OWNED_ATTRIBUTES = ["tipo_documento", "numero_documento", "celular"];
 
 export default async () => {
   render(<Extension />, document.body);
 };
 
-const DOC_TYPES = ["CO3", "PE3", "BL3", "CR3", "EC3", "GT3", "PN3"];
-
-/** @type {Record<string, { label: string, hint: string, error: string, maxLength: number }>} */
-const DOC_CONFIG = {
-  "CO3": { label: "docTypeCo3", hint: "hintCo3", error: "errorCo3", maxLength: 10 },
-  "PE3": { label: "docTypePe3", hint: "hintPe3", error: "errorPe3", maxLength: 8  },
-  "BL3": { label: "docTypeBl3", hint: "hintBl3", error: "errorBl3", maxLength: 9  },
-  "CR3": { label: "docTypeCr3", hint: "hintCr3", error: "errorCr3", maxLength: 9  },
-  "EC3": { label: "docTypeEc3", hint: "hintEc3", error: "errorEc3", maxLength: 10 },
-  "GT3": { label: "docTypeGt3", hint: "hintGt3", error: "errorGt3", maxLength: 13 },
-  "PN3": { label: "docTypePn3", hint: "hintPn3", error: "errorPn3", maxLength: 12 },
-};
-
-/** Valida cédula ecuatoriana usando algoritmo de módulo 10 */
-function validateEcuadorCI(value) {
-  if (!/^\d{10}$/.test(value)) return false;
-  const province = parseInt(value.substring(0, 2));
-  if (province < 1 || province > 24) return false;
-  if (parseInt(value[2]) > 6) return false;
-  const coeff = [2, 1, 2, 1, 2, 1, 2, 1, 2];
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let v = parseInt(value[i]) * coeff[i];
-    if (v >= 10) v -= 9;
-    sum += v;
-  }
-  const check = sum % 10 === 0 ? 0 : 10 - (sum % 10);
-  return check === parseInt(value[9]);
-}
-
-/**
- * @param {string} type
- * @param {string} value
- * @param {(key: string) => string} t
- * @returns {string | undefined}
- */
-function validateDoc(type, value, t) {
-  if (!value) return t("errorDocRequired");
-  switch (type) {
-    case "CO3":
-      return /^\d{6,10}$/.test(value) ? undefined : t("errorCo3");
-    case "PE3":
-      return /^\d{8}$/.test(value) ? undefined : t("errorPe3");
-    case "BL3":
-      return /^\d{4,8}[A-Za-z]?$/.test(value) ? undefined : t("errorBl3");
-    case "CR3":
-      return /^\d{9}$/.test(value) ? undefined : t("errorCr3");
-    case "EC3":
-      return validateEcuadorCI(value) ? undefined : t("errorEc3");
-    case "GT3":
-      return /^\d{13}$/.test(value) ? undefined : t("errorGt3");
-    case "PN3":
-      return /^\d{1,2}-\d{3,4}-\d{3,4}$/.test(value) ? undefined : t("errorPn3");
-    default:
-      return undefined;
-  }
-}
-
 function Extension() {
   const t = (key) => shopify.i18n.translate(key);
+  const applyAttributeChange = useApplyAttributeChange();
+  const customer = useCustomer();
+  const currentCustomerId = customer?.id;
 
-  const [initialDocType, initialDocNumber, initialPhone] = useAttributeValues([
-    "tipo_documento",
-    "numero_documento",
-    "celular",
-  ]);
+  const stampOwner = () => {
+    if (!currentCustomerId) return;
+    applyAttributeChange({
+      type: "updateAttribute",
+      key: OWNER_KEY,
+      value: currentCustomerId,
+    });
+  };
+
+  /**
+   * Sincroniza un attribute del checkout. Fire-and-forget.
+   * Si hay customer logueado, también estampa el marker `OWNER_KEY` para
+   * detectar datos huérfanos al remontar como otro customer / guest.
+   */
+  const saveAttribute = (key, value) => {
+    applyAttributeChange({
+      type: "updateAttribute",
+      key,
+      value: typeof value === "string" ? value.trim() : value,
+    });
+    stampOwner();
+  };
+
+  const savedTipoDoc = useCustomerMetafield("custom", "tipo_documento");
+  const savedNumDoc = useCustomerMetafield("custom", "numero_documento");
+  const savedCelular = useCustomerMetafield("custom", "celular");
+
+  // Valores actuales en el checkout + marker de propietario.
+  const [initialDocType, initialDocNumber, initialPhone, ownerMarker] =
+    useAttributeValues([
+      "tipo_documento",
+      "numero_documento",
+      "celular",
+      OWNER_KEY,
+    ]);
+  const hasOwnedValues = Boolean(
+    initialDocType || initialDocNumber || initialPhone,
+  );
 
   const [tipoDoc, setTipoDoc] = useState(initialDocType ?? "");
   const [numDoc, setNumDoc] = useState(initialDocNumber ?? "");
   const [celular, setCelular] = useState(initialPhone ?? "");
+  const [didAutofill, setDidAutofill] = useState(false);
   const [errors, setErrors] = useState(
     /** @type {Record<string, string|undefined>} */ ({}),
   );
+
+  /** Limpia estado local + attributes + marker. */
+  const wipeAll = () => {
+    setTipoDoc("");
+    setNumDoc("");
+    setCelular("");
+    setErrors({});
+    setDidAutofill(false);
+    for (const key of OWNED_ATTRIBUTES) {
+      applyAttributeChange({ type: "updateAttribute", key, value: "" });
+    }
+    applyAttributeChange({
+      type: "updateAttribute",
+      key: OWNER_KEY,
+      value: "",
+    });
+  };
+
+  // Wipe defensivo en mount: si el marker apunta a un customer distinto
+  // (cierre de navegador, switch de cuenta) limpiamos antes que cualquier
+  // otro efecto pueda reusar datos huérfanos.
+  useEffect(() => {
+    if (ownerMarker && ownerMarker !== currentCustomerId) {
+      wipeAll();
+    }
+  }, [ownerMarker, currentCustomerId]);
+
+  // Backfill del owner marker para valores heredados de implementaciones
+  // anteriores donde los attributes existian pero aun no se estampaba OWNER_KEY.
+  useEffect(() => {
+    if (currentCustomerId && hasOwnedValues && !ownerMarker) {
+      stampOwner();
+    }
+  }, [currentCustomerId, hasOwnedValues, ownerMarker]);
+
+  // Wipe en tiempo real ante logout o cambio de customer dentro de la sesión.
+  useOnCustomerChange(() => {
+    wipeAll();
+  });
+
+  // Autofill único desde customer metafields cuando el cliente está logueado.
+  // Corre una sola vez: no pisa ediciones del usuario aunque deje un campo vacío.
+  useEffect(() => {
+    if (didAutofill) return;
+    const hasAnySaved = savedTipoDoc || savedNumDoc || savedCelular;
+    if (!hasAnySaved) return;
+
+    if (savedTipoDoc && !initialDocType) {
+      setTipoDoc(savedTipoDoc);
+      saveAttribute("tipo_documento", savedTipoDoc);
+    }
+    if (savedNumDoc && !initialDocNumber) {
+      setNumDoc(savedNumDoc);
+      saveAttribute("numero_documento", savedNumDoc);
+    }
+    if (savedCelular && !initialPhone) {
+      setCelular(savedCelular);
+      saveAttribute("celular", savedCelular);
+    }
+    setErrors({});
+    setDidAutofill(true);
+  }, [
+    savedTipoDoc,
+    savedNumDoc,
+    savedCelular,
+    initialDocType,
+    initialDocNumber,
+    initialPhone,
+    didAutofill,
+  ]);
 
   useBuyerJourneyIntercept(() => {
     const newErrors = /** @type {Record<string, string>} */ ({});
@@ -92,8 +151,8 @@ function Extension() {
 
     if (!tipoDoc) newErrors.tipoDoc = t("errorDocTypeRequired");
 
-    const docError = validateDoc(tipoDoc, trimmedDoc, t);
-    if (docError) newErrors.numDoc = docError;
+    const docErrorKey = validateDocKey(tipoDoc, trimmedDoc);
+    if (docErrorKey) newErrors.numDoc = t(docErrorKey);
 
     if (!trimmedPhone) newErrors.celular = t("errorPhoneRequired");
     else if (!/^\+?[\d\s\-()]{7,15}$/.test(trimmedPhone))
@@ -109,14 +168,6 @@ function Extension() {
 
     return { behavior: "allow" };
   });
-
-  async function saveAttribute(key, value) {
-    await shopify.applyAttributeChange({
-      type: "updateAttribute",
-      key,
-      value: typeof value === "string" ? value.trim() : value,
-    });
-  }
 
   return (
     <s-stack direction="block" gap="base">
