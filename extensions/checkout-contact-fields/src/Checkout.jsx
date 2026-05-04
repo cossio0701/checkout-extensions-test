@@ -6,6 +6,7 @@ import {
   useAttributeValues,
   useApplyAttributeChange,
   useCustomer,
+  useSettings,
 } from "@shopify/ui-extensions/checkout/preact";
 import {
   useCustomerMetafield,
@@ -15,7 +16,6 @@ import {
   DOC_TYPES,
   DOC_CONFIG,
   validateDocKey,
-  isSupportedDocType,
   normalizeDocType,
 } from "./doc-validation.js";
 
@@ -28,9 +28,16 @@ export default async () => {
 
 function Extension() {
   const t = (key) => shopify.i18n.translate(key);
+  const settings = useSettings();
   const applyAttributeChange = useApplyAttributeChange();
   const customer = useCustomer();
   const currentCustomerId = customer?.id;
+
+  const enabledDocTypes = DOC_TYPES.filter(
+    (code) => !settings[`disable_${code.toLowerCase()}`],
+  );
+
+  const isDocTypeEnabled = (code) => enabledDocTypes.includes(code);
 
   const stampOwner = () => {
     if (!currentCustomerId) return;
@@ -107,6 +114,16 @@ function Extension() {
     }
   }, [ownerMarker, currentCustomerId]);
 
+  // Limpia el tipo de documento si fue deshabilitado desde el customizer.
+  useEffect(() => {
+    if (tipoDoc && !isDocTypeEnabled(tipoDoc)) {
+      setTipoDoc("");
+      setNumDoc("");
+      saveAttribute("tipo_documento", "");
+      saveAttribute("numero_documento", "");
+    }
+  }, [enabledDocTypes.join(",")]);
+
   // Backfill del owner marker para valores heredados de implementaciones
   // anteriores donde los attributes existian pero aun no se estampaba OWNER_KEY.
   useEffect(() => {
@@ -122,20 +139,20 @@ function Extension() {
 
   // Autofill único desde customer metafields cuando el cliente está logueado.
   // Corre una sola vez: no pisa ediciones del usuario aunque deje un campo vacío.
-  // Tipos desconocidos se ignoran; celular se autofill independientemente.
+  // Tipos desconocidos o deshabilitados se ignoran; celular se autofill independientemente.
   useEffect(() => {
     if (didAutofill) return;
     const hasAnySaved = savedTipoDoc || savedNumDoc || savedCelular;
     if (!hasAnySaved) return;
 
-    const isTipoDocSupported = isSupportedDocType(savedTipoDoc);
+    const isTipoDocEnabled = isDocTypeEnabled(savedTipoDoc);
 
-    if (isTipoDocSupported && savedTipoDoc && !initialDocType) {
+    if (isTipoDocEnabled && savedTipoDoc && !initialDocType) {
       setTipoDoc(savedTipoDoc);
       saveAttribute("tipo_documento", savedTipoDoc);
     }
 
-    if (isTipoDocSupported && savedNumDoc && !initialDocNumber) {
+    if (isTipoDocEnabled && savedNumDoc && !initialDocNumber) {
       setNumDoc(savedNumDoc);
       saveAttribute("numero_documento", savedNumDoc);
     }
@@ -155,6 +172,7 @@ function Extension() {
     initialDocNumber,
     initialPhone,
     didAutofill,
+    enabledDocTypes.join(","),
   ]);
 
   useBuyerJourneyIntercept(() => {
@@ -204,7 +222,7 @@ function Extension() {
           }}
         >
           <s-option value="">{t("selectPlaceholder")}</s-option>
-          {DOC_TYPES.map((code) => (
+          {enabledDocTypes.map((code) => (
             <s-option key={code} value={code}>
               {t(DOC_CONFIG[code].label)}
             </s-option>
