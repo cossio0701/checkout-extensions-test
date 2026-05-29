@@ -26,45 +26,8 @@ key = "numero_documento"
 namespace = "custom"
 key = "celular"
 
-[extensions.settings]
-[[extensions.settings.fields]]
-key = "disable_co3"
-type = "boolean"
-name = "Ocultar cédula de ciudadanía (Colombia)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
-
-[[extensions.settings.fields]]
-key = "disable_pe3"
-type = "boolean"
-name = "Ocultar DNI (Perú)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
-
-[[extensions.settings.fields]]
-key = "disable_bl3"
-type = "boolean"
-name = "Ocultar cédula de identidad (Bolivia)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
-
-[[extensions.settings.fields]]
-key = "disable_cr3"
-type = "boolean"
-name = "Ocultar cédula de identidad (Costa Rica)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
-
-[[extensions.settings.fields]]
-key = "disable_ec3"
-type = "boolean"
-name = "Ocultar cédula de identidad (Ecuador)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
-
-[[extensions.settings.fields]]
-key = "disable_gt3"
-type = "boolean"
-name = "Ocultar DPI (Guatemala)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
-
-[[extensions.settings.fields]]
-key = "disable_pn3"
-type = "boolean"
-name = "Ocultar pasaporte (Panamá)"
-description = "Marcar para deshabilitar este tipo de documento en el checkout"
+# Metafield de tienda con la configuración del checkout (qué documentos se
+# habilitan y sus labels custom). Lo escribe el dev al instalar la app.
+[[extensions.metafields]]
+namespace = "checkout_config"
+key = "settings"

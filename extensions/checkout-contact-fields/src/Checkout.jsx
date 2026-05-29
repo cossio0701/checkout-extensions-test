@@ -6,14 +6,13 @@ import {
   useAttributeValues,
   useApplyAttributeChange,
   useCustomer,
-  useSettings,
 } from "@shopify/ui-extensions/checkout/preact";
 import {
   useCustomerMetafield,
   useOnCustomerChange,
 } from "./customer-metafields.js";
+import { useCheckoutConfig } from "./checkout-config.js";
 import {
-  DOC_TYPES,
   DOC_CONFIG,
   validateDocKey,
   normalizeDocType,
@@ -28,14 +27,14 @@ export default async () => {
 
 function Extension() {
   const t = (key) => shopify.i18n.translate(key);
-  const settings = useSettings();
   const applyAttributeChange = useApplyAttributeChange();
   const customer = useCustomer();
   const currentCustomerId = customer?.id;
 
-  const enabledDocTypes = DOC_TYPES.filter(
-    (code) => !settings[`disable_${code.toLowerCase()}`],
-  );
+  // Config por tienda desde el metafield `checkout_config.settings`.
+  // El metafield solo lleva DATOS (qué documentos mostrar + labels custom);
+  // la validación vive siempre en el código (doc-validation.js).
+  const { enabledDocTypes, customLabels } = useCheckoutConfig();
 
   const isDocTypeEnabled = (code) => enabledDocTypes.includes(code);
 
@@ -224,7 +223,7 @@ function Extension() {
           <s-option value="">{t("selectPlaceholder")}</s-option>
           {enabledDocTypes.map((code) => (
             <s-option key={code} value={code}>
-              {t(DOC_CONFIG[code].label)}
+              {customLabels[code] || t(DOC_CONFIG[code].label)}
             </s-option>
           ))}
         </s-select>

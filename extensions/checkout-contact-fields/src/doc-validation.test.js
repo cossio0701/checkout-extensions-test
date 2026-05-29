@@ -157,6 +157,97 @@ describe("validateDocKey — GT3 (Guatemala)", () => {
   });
 });
 
+describe("validateDocKey — CO1 (Cédula de Extranjería)", () => {
+  it("acepta 4 a 16 caracteres alfanuméricos", () => {
+    expect(validateDocKey("CO1", "ABCD")).toBeUndefined();
+    expect(validateDocKey("CO1", "abc123")).toBeUndefined();
+    expect(validateDocKey("CO1", "A1B2C3D4E5F6G7H8")).toBeUndefined();
+  });
+
+  it("rechaza menos de 4, más de 16 o símbolos", () => {
+    expect(validateDocKey("CO1", "ABC")).toBe("errorCo1");
+    expect(validateDocKey("CO1", "A1B2C3D4E5F6G7H8I")).toBe("errorCo1");
+    expect(validateDocKey("CO1", "ABC-123")).toBe("errorCo1");
+  });
+});
+
+describe("validateDocKey — CO2 (NIT)", () => {
+  it("acepta 9 dígitos + guión + dígito verificador", () => {
+    expect(validateDocKey("CO2", "900123456-7")).toBeUndefined();
+  });
+
+  it("rechaza formatos inválidos", () => {
+    expect(validateDocKey("CO2", "90012345-7")).toBe("errorCo2");
+    expect(validateDocKey("CO2", "900123456-77")).toBe("errorCo2");
+    expect(validateDocKey("CO2", "9001234567")).toBe("errorCo2");
+    expect(validateDocKey("CO2", "90012345A-7")).toBe("errorCo2");
+  });
+});
+
+describe("validateDocKey — CO4 (Tarjeta de Identidad)", () => {
+  it("acepta exactamente 10 dígitos", () => {
+    expect(validateDocKey("CO4", "1234567890")).toBeUndefined();
+  });
+
+  it("rechaza longitudes distintas o no-numéricos", () => {
+    expect(validateDocKey("CO4", "123456789")).toBe("errorCo4");
+    expect(validateDocKey("CO4", "12345678901")).toBe("errorCo4");
+    expect(validateDocKey("CO4", "123456789a")).toBe("errorCo4");
+  });
+});
+
+describe("validateDocKey — EC1 (Pasaporte)", () => {
+  it("acepta 5 a 15 caracteres alfanuméricos", () => {
+    expect(validateDocKey("EC1", "AB123")).toBeUndefined();
+    expect(validateDocKey("EC1", "A1B2C3D4E5F6G7H")).toBeUndefined();
+  });
+
+  it("rechaza menos de 5, más de 15 o símbolos", () => {
+    expect(validateDocKey("EC1", "AB12")).toBe("errorEc1");
+    expect(validateDocKey("EC1", "A1B2C3D4E5F6G7H8")).toBe("errorEc1");
+    expect(validateDocKey("EC1", "AB 123")).toBe("errorEc1");
+  });
+});
+
+describe("validateDocKey — EC2 (RUC)", () => {
+  it("acepta exactamente 13 dígitos", () => {
+    expect(validateDocKey("EC2", "1234567890123")).toBeUndefined();
+  });
+
+  it("rechaza longitudes distintas o no-numéricos", () => {
+    expect(validateDocKey("EC2", "123456789012")).toBe("errorEc2");
+    expect(validateDocKey("EC2", "12345678901234")).toBe("errorEc2");
+    expect(validateDocKey("EC2", "123456789012a")).toBe("errorEc2");
+  });
+});
+
+describe("validateDocKey — GT1 (Pasaporte)", () => {
+  it("acepta 5 a 15 caracteres alfanuméricos", () => {
+    expect(validateDocKey("GT1", "AB123")).toBeUndefined();
+    expect(validateDocKey("GT1", "A1B2C3D4E5F6G7H")).toBeUndefined();
+  });
+
+  it("rechaza menos de 5, más de 15 o símbolos", () => {
+    expect(validateDocKey("GT1", "AB12")).toBe("errorGt1");
+    expect(validateDocKey("GT1", "A1B2C3D4E5F6G7H8")).toBe("errorGt1");
+    expect(validateDocKey("GT1", "AB-123")).toBe("errorGt1");
+  });
+});
+
+describe("validateDocKey — GT2 (NIT)", () => {
+  it("acepta dígitos + guión + dígitos", () => {
+    expect(validateDocKey("GT2", "1234567-8")).toBeUndefined();
+    expect(validateDocKey("GT2", "12-3")).toBeUndefined();
+  });
+
+  it("rechaza formatos inválidos", () => {
+    expect(validateDocKey("GT2", "1234567")).toBe("errorGt2");
+    expect(validateDocKey("GT2", "12345678")).toBe("errorGt2");
+    expect(validateDocKey("GT2", "ABC-123")).toBe("errorGt2");
+    expect(validateDocKey("GT2", "-123")).toBe("errorGt2");
+  });
+});
+
 describe("isSupportedDocType", () => {
   it("acepta cada tipo en DOC_TYPES", () => {
     for (const type of DOC_TYPES) {
