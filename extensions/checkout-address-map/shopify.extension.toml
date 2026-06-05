@@ -1,0 +1,21 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "checkout-address-map"
+handle = "checkout-address-map"
+uid = "718f0aae-dc1d-41e6-9b67-a326ca9921b9"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.checkout.delivery-address.render-after"
+
+[extensions.capabilities]
+# La extensión geocodifica direcciones contra la Geocoding API de Google.
+network_access = true
+
+# Metafield de tienda con la config del mapa: API key de Google Maps, centro y
+# zoom por defecto. Lo escribe el dev al instalar la app. Solo lleva DATOS.
+[[extensions.metafields]]
+namespace = "gco_delivery"
+key = "settings"

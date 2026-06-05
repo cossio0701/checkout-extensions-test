@@ -1,0 +1,11 @@
+{
+  "mapInstructions": "Ajustez le repère s'il n'est pas sur votre domicile.",
+  "mapLabel": "Carte de votre adresse de livraison",
+  "labelReference": "Référence pour le livreur",
+  "hintReference": "Ex. : portail noir, en face de la boulangerie, maison à deux étages.",
+  "resetPin": "Réinitialiser le repère sur mon adresse",
+  "riskNoNumber": "Nous n'avons pas détecté votre numéro de rue. Je confirme que le repère indique mon lieu de livraison.",
+  "riskApproximate": "Cet emplacement est approximatif. Je confirme que le repère indique mon lieu de livraison.",
+  "riskPinFar": "Le repère est loin de l'adresse saisie. Je confirme qu'il est correct.",
+  "riskGeneric": "Je confirme que le repère indique mon lieu de livraison."
+}
