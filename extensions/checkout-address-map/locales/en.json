@@ -3,8 +3,8 @@
   "mapLabel": "Map of your delivery address",
   "labelReference": "Reference for the courier",
   "hintReference": "E.g.: black gate, across from the bakery, two-story house.",
-  "resetPin": "Reset pin to my address",
-  "riskNoNumber": "We couldn't detect your street number. I confirm the pin marks my delivery location.",
+  "resetPin": "Back to my address",
+  "riskNoNumber": "We couldn't pinpoint the exact street number. I confirm the pin marks my delivery location.",
   "riskApproximate": "This location is approximate. I confirm the pin marks my delivery location.",
   "riskPinFar": "The pin is far from the typed address. I confirm it's correct.",
   "riskGeneric": "I confirm the pin marks my delivery location."

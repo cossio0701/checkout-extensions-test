@@ -156,9 +156,7 @@ function Extension() {
 
       {typeof pinMovedMeters === "number" &&
         pinMovedMeters >= PIN_MOVED_NOTICE_M && (
-          <s-button variant="secondary" onClick={resetPinToAddress}>
-            {t("resetPin")}
-          </s-button>
+          <s-link onClick={resetPinToAddress}>{t("resetPin")}</s-link>
         )}
 
       <s-text-field

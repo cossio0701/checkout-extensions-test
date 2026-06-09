@@ -3,8 +3,8 @@
   "mapLabel": "Mapa de tu dirección de entrega",
   "labelReference": "Referencia para el repartidor",
   "hintReference": "Ej.: portón negro, frente a la panadería, casa de dos pisos.",
-  "resetPin": "Restablecer el pin a mi dirección",
-  "riskNoNumber": "No detectamos el número de tu dirección. Confirmo que el pin marca mi ubicación de entrega.",
+  "resetPin": "Volver a mi dirección",
+  "riskNoNumber": "No pudimos ubicar el número exacto. Confirmo que el pin marca mi ubicación de entrega.",
   "riskApproximate": "La ubicación es aproximada. Confirmo que el pin marca mi ubicación de entrega.",
   "riskPinFar": "El pin quedó lejos de la dirección escrita. Confirmo que es correcto.",
   "riskGeneric": "Confirmo que el pin marca mi ubicación de entrega."
