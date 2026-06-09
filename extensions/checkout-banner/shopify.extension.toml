@@ -1,0 +1,19 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "checkout-banner"
+handle = "checkout-banner"
+uid = "68651933-d67b-5cc4-f075-88466d105dd0eb7b7e99"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/Banner.jsx"
+target = "purchase.checkout.header.render-after"
+
+[[extensions.metafields]]
+namespace = "checkout_config"
+key = "settings"
+
+[[extensions.metafields]]
+namespace = "custom"
+key = "banner_checkout"
