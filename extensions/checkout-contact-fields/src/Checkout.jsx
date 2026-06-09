@@ -19,7 +19,7 @@ import {
 } from "./doc-validation.js";
 
 const OWNER_KEY = "contact_fields_owner";
-const OWNED_ATTRIBUTES = ["tipo_documento", "numero_documento", "celular"];
+const OWNED_ATTRIBUTES = ["document_type", "document_number", "phone"];
 
 export default async () => {
   render(<Extension />, document.body);
@@ -61,37 +61,37 @@ function Extension() {
     stampOwner();
   };
 
-  const savedTipoDoc = useCustomerMetafield("custom", "tipo_documento");
-  const savedNumDoc = useCustomerMetafield("custom", "numero_documento");
-  const savedCelular = useCustomerMetafield("custom", "celular");
+  const savedDocType = useCustomerMetafield("custom", "document_type");
+  const savedDocNumber = useCustomerMetafield("custom", "document_number");
+  const savedPhone = useCustomerMetafield("custom", "phone");
 
   // Valores actuales en el checkout + marker de propietario.
   const [initialDocType, initialDocNumber, initialPhone, ownerMarker] =
     useAttributeValues([
-      "tipo_documento",
-      "numero_documento",
-      "celular",
+      "document_type",
+      "document_number",
+      "phone",
       OWNER_KEY,
     ]);
   const hasOwnedValues = Boolean(
     initialDocType || initialDocNumber || initialPhone,
   );
 
-  const [tipoDoc, setTipoDoc] = useState(normalizeDocType(initialDocType));
-  const [numDoc, setNumDoc] = useState(initialDocNumber ?? "");
-  const [celular, setCelular] = useState(initialPhone ?? "");
+  const [docType, setDocType] = useState(normalizeDocType(initialDocType));
+  const [docNumber, setDocNumber] = useState(initialDocNumber ?? "");
+  const [phone, setPhone] = useState(initialPhone ?? "");
   const [didAutofill, setDidAutofill] = useState(false);
   const [errors, setErrors] = useState(
     /** @type {Record<string, string|undefined>} */ ({}),
   );
 
-  const selectedDocConfig = DOC_CONFIG[tipoDoc] ?? undefined;
+  const selectedDocConfig = DOC_CONFIG[docType] ?? undefined;
 
   /** Limpia estado local + attributes + marker. */
   const wipeAll = () => {
-    setTipoDoc("");
-    setNumDoc("");
-    setCelular("");
+    setDocType("");
+    setDocNumber("");
+    setPhone("");
     setErrors({});
     setDidAutofill(false);
     for (const key of OWNED_ATTRIBUTES) {
@@ -115,11 +115,11 @@ function Extension() {
 
   // Limpia el tipo de documento si fue deshabilitado desde el customizer.
   useEffect(() => {
-    if (tipoDoc && !isDocTypeEnabled(tipoDoc)) {
-      setTipoDoc("");
-      setNumDoc("");
-      saveAttribute("tipo_documento", "");
-      saveAttribute("numero_documento", "");
+    if (docType && !isDocTypeEnabled(docType)) {
+      setDocType("");
+      setDocNumber("");
+      saveAttribute("document_type", "");
+      saveAttribute("document_number", "");
     }
   }, [enabledDocTypes.join(",")]);
 
@@ -138,35 +138,35 @@ function Extension() {
 
   // Autofill único desde customer metafields cuando el cliente está logueado.
   // Corre una sola vez: no pisa ediciones del usuario aunque deje un campo vacío.
-  // Tipos desconocidos o deshabilitados se ignoran; celular se autofill independientemente.
+  // Tipos desconocidos o deshabilitados se ignoran; phone se autofill independientemente.
   useEffect(() => {
     if (didAutofill) return;
-    const hasAnySaved = savedTipoDoc || savedNumDoc || savedCelular;
+    const hasAnySaved = savedDocType || savedDocNumber || savedPhone;
     if (!hasAnySaved) return;
 
-    const isTipoDocEnabled = isDocTypeEnabled(savedTipoDoc);
+    const isDocTypeSavedEnabled = isDocTypeEnabled(savedDocType);
 
-    if (isTipoDocEnabled && savedTipoDoc && !initialDocType) {
-      setTipoDoc(savedTipoDoc);
-      saveAttribute("tipo_documento", savedTipoDoc);
+    if (isDocTypeSavedEnabled && savedDocType && !initialDocType) {
+      setDocType(savedDocType);
+      saveAttribute("document_type", savedDocType);
     }
 
-    if (isTipoDocEnabled && savedNumDoc && !initialDocNumber) {
-      setNumDoc(savedNumDoc);
-      saveAttribute("numero_documento", savedNumDoc);
+    if (isDocTypeSavedEnabled && savedDocNumber && !initialDocNumber) {
+      setDocNumber(savedDocNumber);
+      saveAttribute("document_number", savedDocNumber);
     }
 
-    if (savedCelular && !initialPhone) {
-      setCelular(savedCelular);
-      saveAttribute("celular", savedCelular);
+    if (savedPhone && !initialPhone) {
+      setPhone(savedPhone);
+      saveAttribute("phone", savedPhone);
     }
 
     setErrors({});
     setDidAutofill(true);
   }, [
-    savedTipoDoc,
-    savedNumDoc,
-    savedCelular,
+    savedDocType,
+    savedDocNumber,
+    savedPhone,
     initialDocType,
     initialDocNumber,
     initialPhone,
@@ -177,17 +177,17 @@ function Extension() {
   useBuyerJourneyIntercept(() => {
     const newErrors = /** @type {Record<string, string>} */ ({});
 
-    const trimmedDoc = numDoc.trim();
-    const trimmedPhone = celular.trim();
+    const trimmedDoc = docNumber.trim();
+    const trimmedPhone = phone.trim();
 
-    if (!tipoDoc) newErrors.tipoDoc = t("errorDocTypeRequired");
+    if (!docType) newErrors.docType = t("errorDocTypeRequired");
 
-    const docErrorKey = validateDocKey(tipoDoc, trimmedDoc);
-    if (docErrorKey) newErrors.numDoc = t(docErrorKey);
+    const docErrorKey = validateDocKey(docType, trimmedDoc);
+    if (docErrorKey) newErrors.docNumber = t(docErrorKey);
 
-    if (!trimmedPhone) newErrors.celular = t("errorPhoneRequired");
+    if (!trimmedPhone) newErrors.phone = t("errorPhoneRequired");
     else if (!/^\+?[\d\s\-()]{7,15}$/.test(trimmedPhone))
-      newErrors.celular = t("errorPhoneInvalid");
+      newErrors.phone = t("errorPhoneInvalid");
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -205,19 +205,19 @@ function Extension() {
       <s-grid gridTemplateColumns="1fr 1fr" gap="base">
         <s-select
           label={t("labelDocumentType")}
-          value={tipoDoc}
-          error={errors.tipoDoc}
+          value={docType}
+          error={errors.docType}
           onChange={(e) => {
             const v = e.target.value;
-            setTipoDoc(v);
-            setNumDoc("");
+            setDocType(v);
+            setDocNumber("");
             setErrors((err) =>
-              err.tipoDoc === undefined && err.numDoc === undefined
+              err.docType === undefined && err.docNumber === undefined
                 ? err
-                : { ...err, tipoDoc: undefined, numDoc: undefined },
+                : { ...err, docType: undefined, docNumber: undefined },
             );
-            saveAttribute("tipo_documento", v);
-            saveAttribute("numero_documento", "");
+            saveAttribute("document_type", v);
+            saveAttribute("document_number", "");
           }}
         >
           <s-option value="">{t("selectPlaceholder")}</s-option>
@@ -230,35 +230,35 @@ function Extension() {
 
         <s-text-field
           label={t("labelDocumentNumber")}
-          value={numDoc}
-          error={errors.numDoc}
+          value={docNumber}
+          error={errors.docNumber}
           disabled={!selectedDocConfig}
           maxLength={selectedDocConfig?.maxLength}
           // @ts-expect-error — `description` is supported at runtime by s-text-field
           description={selectedDocConfig ? t(selectedDocConfig.hint) : undefined}
           onInput={(e) => {
             const v = e.target.value;
-            setNumDoc(v);
+            setDocNumber(v);
             setErrors((err) =>
-              err.numDoc === undefined ? err : { ...err, numDoc: undefined },
+              err.docNumber === undefined ? err : { ...err, docNumber: undefined },
             );
-            saveAttribute("numero_documento", v);
+            saveAttribute("document_number", v);
           }}
         />
       </s-grid>
 
       <s-text-field
         label={t("labelPhone")}
-        value={celular}
-        error={errors.celular}
+        value={phone}
+        error={errors.phone}
         maxLength={15}
         onInput={(e) => {
           const v = e.target.value;
-          setCelular(v);
+          setPhone(v);
           setErrors((err) =>
-            err.celular === undefined ? err : { ...err, celular: undefined },
+            err.phone === undefined ? err : { ...err, phone: undefined },
           );
-          saveAttribute("celular", v);
+          saveAttribute("phone", v);
         }}
       />
     </s-stack>

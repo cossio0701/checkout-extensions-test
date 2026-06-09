@@ -16,15 +16,15 @@ block_progress = true
 # Customer metafields para pre-llenar datos cuando el usuario está logueado
 [[extensions.metafields]]
 namespace = "custom"
-key = "tipo_documento"
+key = "document_type"
 
 [[extensions.metafields]]
 namespace = "custom"
-key = "numero_documento"
+key = "document_number"
 
 [[extensions.metafields]]
 namespace = "custom"
-key = "celular"
+key = "phone"
 
 # Metafield de tienda con la configuración del checkout (qué documentos se
 # habilitan y sus labels custom). Lo escribe el dev al instalar la app.
